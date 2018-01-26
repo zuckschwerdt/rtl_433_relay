@@ -77,6 +77,15 @@ def publish_sensor_to_mqtt(mqttc, data, line):
     mqttc.publish(path, line)
 
 
+def parse_syslog(line):
+    """Try to parse syslog line with JSON payload or RAW JSON."""
+    if line.startswith("<"):
+        # fields should be "<PRI>VER", timestamp, hostname, command, pid, mid, sdata, payload
+        fields = line.split(None, 7)
+        line = fields[-1]
+    return json.loads(line)
+
+
 def rtl_433_probe():
     """Run a rtl_433 UDP listener."""
     mqttc = mqtt.Client()
@@ -88,7 +97,7 @@ def rtl_433_probe():
     while True:
         line, addr = sock.recvfrom(1024)
         try:
-            data = json.loads(line)
+            data = parse_syslog(line)
             publish_sensor_to_mqtt(mqttc, data, line)
 
         except ValueError:

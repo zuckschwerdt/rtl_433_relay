@@ -48,6 +48,15 @@ def sanitize(text):
     return text.replace(" ", "_")
 
 
+def parse_syslog(line):
+    """Try to parse syslog line with JSON payload or RAW JSON."""
+    if line.startswith("<"):
+        # fields should be "<PRI>VER", timestamp, hostname, command, pid, mid, sdata, payload
+        fields = line.split(None, 7)
+        line = fields[-1]
+    return json.loads(line)
+
+
 def rtl_433_probe():
     graphite = GraphiteUdpClient(host=GRAPHITE_HOST,
                                  port=GRAPHITE_PORT)
@@ -56,7 +65,7 @@ def rtl_433_probe():
         line, addr = sock.recvfrom(1024)
 
         try:
-            data = json.loads(line)
+            data = parse_syslog(line)
             now = int(time.time())
 
             label = sanitize(data["model"])
