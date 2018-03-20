@@ -79,6 +79,7 @@ def publish_sensor_to_mqtt(mqttc, data, line):
 
 def parse_syslog(line):
     """Try to parse syslog line with JSON payload or RAW JSON."""
+    line = line.decode("ascii")  # also UTF-8 if BOM
     if line.startswith("<"):
         # fields should be "<PRI>VER", timestamp, hostname, command, pid, mid, sdata, payload
         fields = line.split(None, 7)
