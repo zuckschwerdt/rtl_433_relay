@@ -71,20 +71,20 @@ def publish_sensor_to_mqtt(mqttc, data, line):
     if "temperature_C" in data:
         mqttc.publish(path + "/temperature", data["temperature_C"])
 
-    if "depth" in data:
-        mqttc.publish(path + "/depth", data["depth"])
+    if "depth_cm" in data:
+        mqttc.publish(path + "/depth", data["depth_cm"])
 
     mqttc.publish(path, line)
 
 
 def parse_syslog(line):
-    """Try to parse syslog line with JSON payload or RAW JSON."""
+    """Try to extract the payload from a syslog line."""
     line = line.decode("ascii")  # also UTF-8 if BOM
     if line.startswith("<"):
         # fields should be "<PRI>VER", timestamp, hostname, command, pid, mid, sdata, payload
         fields = line.split(None, 7)
         line = fields[-1]
-    return json.loads(line)
+    return line
 
 
 def rtl_433_probe():
@@ -98,7 +98,8 @@ def rtl_433_probe():
     while True:
         line, addr = sock.recvfrom(1024)
         try:
-            data = parse_syslog(line)
+            line = parse_syslog(line)
+            data = json.loads(line)
             publish_sensor_to_mqtt(mqttc, data, line)
 
         except ValueError:

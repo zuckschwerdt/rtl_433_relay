@@ -49,13 +49,13 @@ def sanitize(text):
 
 
 def parse_syslog(line):
-    """Try to parse syslog line with JSON payload or RAW JSON."""
+    """Try to extract the payload from a syslog line."""
     line = line.decode("ascii")  # also UTF-8 if BOM
     if line.startswith("<"):
         # fields should be "<PRI>VER", timestamp, hostname, command, pid, mid, sdata, payload
         fields = line.split(None, 7)
         line = fields[-1]
-    return json.loads(line)
+    return line
 
 
 def rtl_433_probe():
@@ -66,7 +66,8 @@ def rtl_433_probe():
         line, addr = sock.recvfrom(1024)
 
         try:
-            data = parse_syslog(line)
+            line = parse_syslog(line)
+            data = json.loads(line)
             now = int(time.time())
 
             label = sanitize(data["model"])
