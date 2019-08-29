@@ -1,5 +1,6 @@
-rtl_433_relay
-=============
+# rtl_433_relay
+
+> ⚠️ **NOTE**: These scripts are now maintained in the [rtl_433 examples](https://github.com/merbanan/rtl_433/tree/master/examples)!
 
 Some example readers/relays for rtl_433 JSON UDP data. Should work with Python 2 and also Python 3.
 
