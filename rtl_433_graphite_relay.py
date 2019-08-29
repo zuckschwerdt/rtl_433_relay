@@ -1,15 +1,22 @@
 #!/usr/bin/env python
 
-# Graphite(Carbon) monitoring relay for rtl_433.
+"""Graphite(Carbon) monitoring relay for rtl_433."""
+
+# Start rtl_433 (rtl_433 -F syslog::1433), then this script
+
+# Option: PEP 3143 - Standard daemon process library
+# (use Python 3.x or pip install python-daemon)
+# import daemon
 
 from __future__ import print_function
+from __future__ import with_statement
 
 import socket
 import time
 import json
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 1234
+UDP_PORT = 1433
 GRAPHITE_HOST = "127.0.0.1"
 GRAPHITE_PORT = 2003
 GRAPHITE_PREFIX = "rtlsdr."
@@ -40,12 +47,14 @@ class GraphiteUdpClient(object):
         self._send(message)
 
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+# allow multiple sockets to use the same PORT number
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 sock.bind((UDP_IP, UDP_PORT))
 
 
 def sanitize(text):
-    return text.replace(" ", "_")
+    return text.replace(" ", "_").replace("/", "_").replace(".", "_").replace("&", "")
 
 
 def parse_syslog(line):
@@ -73,6 +82,8 @@ def rtl_433_probe():
             label = sanitize(data["model"])
             if "channel" in data:
                 label += ".CH" + str(data["channel"])
+            elif "id" in data:
+                label += ".ID" + str(data["id"])
             path = GRAPHITE_PREFIX + label
 
             if "battery" in data:
@@ -86,6 +97,8 @@ def rtl_433_probe():
 
             graphite.push(path + '.temperature', data["temperature_C"], now)
 
+            # graphite.commit()  # for Pickle protocol only
+
         except KeyError:
             pass
 
@@ -93,5 +106,14 @@ def rtl_433_probe():
             pass
 
 
-if __name__ == "__main__":
+def run():
+    # with daemon.DaemonContext(files_preserve=[sock]):
+    #  detach_process=True
+    #  uid
+    #  gid
+    #  working_directory
     rtl_433_probe()
+
+
+if __name__ == "__main__":
+    run()
